@@ -1,0 +1,23 @@
+{
+  "name": "octopusmb-client",
+  "version": "0.1.0",
+  "description": "octopusMB client",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/one1erp/octopusMB-client.git"
+  },
+  "author": "Dror Vomberg",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/one1erp/octopusMB-client/issues"
+  },
+  "homepage": "https://github.com/one1erp/octopusMB-client#readme",
+  "dependencies": {
+    "eventemitter3": "^4.0.7",
+    "ws": "^7.4.6"
+  }
+}
