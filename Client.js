@@ -3,11 +3,12 @@ const ws = require('ws');
 
 class Client extends EventEmitter {
 
-    identified = false;
-    messageId = 0;
-    ws = null;
-    group = null;
-    name= null;
+    _identified = false;
+    _messageId = 0;
+    _ws = null;
+    _group = null;
+    _name= null;
+    _messages = {};
 
     constructor({
             url,
@@ -47,21 +48,22 @@ class Client extends EventEmitter {
             return;
         }
 
-        this.group = group.trim();
-        this.name = (name)? name.trim() : null;
+        this._group = group.trim();
+        this._name = (name)? name.trim() : null;
         let fullUrl = (url.includes(":"))? url : url + ":" + "8899";
 
-        this.ws = new ws("ws://" + fullUrl);
-        this.ws.on('open', () => {
+        this._ws = new ws("ws://" + fullUrl);
+        this._ws.on('open', () => {
             let identityJson = {
-                group: this.group,
-                name: this.name
+                group: this._group,
+                name: this._name
             }
 
-            this.ws.send(JSON.stringify(identityJson));
+            this._ws.send(JSON.stringify(identityJson));
         });
 
-        this.ws.on("message", (message) => {
+        this._ws.on("message", (message) => {
+            console.log("base message:" + message);
             let jsonMessage = null;
             try {
                 jsonMessage = JSON.parse(message);
@@ -70,21 +72,45 @@ class Client extends EventEmitter {
                 return;
             }
 
-            if (!this.identified) {
+            if (!this._identified) {
                 if (jsonMessage.status == "fail") {
                     this.emit("error", new Error(jsonMessage.errorMessage));
                 } else {
-                    this.identified = true;
-                    if (!this.name) this.name = jsonMessage.identity;
-                    console.log(this.name);
+                    this._identified = true;
+                    if (!this._name) this._name = jsonMessage.identity;
+                    console.log(this._name);
+                    this.emit("open");
                 }
+            } else {
+                console.log("getting message:" + jsonMessage);
+                this.emit("message", jsonMessage);
             }
         });
     }
 
     send(message) {
-        this.ws.send(message);
+        this._ws.send(message);
     }
+
+    publish(name, message) {
+        let newMessage = {
+            to: name,
+            data: message
+        }
+        newMessage.clientMessageId = this._generateMessageId();
+        this._ws.send(JSON.stringify(newMessage));
+    }
+
+    close () {
+        this._ws.close();
+    }
+
+    _generateMessageId() {
+        this._messageId++;
+        return this._messageId;
+    }
+
+    
 }
 
 module.exports = Client
