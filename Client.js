@@ -83,7 +83,7 @@ class Client extends EventEmitter {
                 }
             } else {
                 console.log("getting message:" + jsonMessage);
-                this.emit("message", jsonMessage);
+                this.emit("message", jsonMessage.data);
             }
         });
     }
