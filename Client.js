@@ -82,8 +82,27 @@ class Client extends EventEmitter {
                     this.emit("open");
                 }
             } else {
-                console.log("getting message:" + jsonMessage);
-                this.emit("message", jsonMessage.data);
+                let type = jsonMessage.type;
+                let replyToClientMessageId = jsonMessage.replyToClientMessageId;
+                if (type == "request") {
+                    this.emit("request", jsonMessage.data, (message) => {
+                        let newMessage = {
+                            replyTo: jsonMessage.messageId,
+                            data: message,
+                            type: "response"
+                        }
+                        newMessage.clientMessageId = this._generateMessageId();
+                        this._ws.send(JSON.stringify(newMessage));
+                    });
+                } else if (replyToClientMessageId) {
+                    console.log("replying to client message id: " + replyToClientMessageId);
+                    let promise = this._messages[replyToClientMessageId];
+                    if (promise) promise.resolve(jsonMessage.data);
+                } else {
+                    console.log("getting message:" + jsonMessage);
+                    this.emit("message", jsonMessage.data);
+                }
+
             }
         });
     }
@@ -95,10 +114,24 @@ class Client extends EventEmitter {
     publish(name, message) {
         let newMessage = {
             to: name,
-            data: message
+            data: message,
+            type: "publish"
         }
         newMessage.clientMessageId = this._generateMessageId();
         this._ws.send(JSON.stringify(newMessage));
+    }
+
+    request(name, message) {
+        let newMessage = {
+            to: name,
+            data: message,
+            type: "request"
+        }
+        newMessage.clientMessageId = this._generateMessageId();
+        this._ws.send(JSON.stringify(newMessage));
+        return new Promise( (resolve, reject) => {
+            this._messages[newMessage.clientMessageId] = {resolve, reject}
+        });
     }
 
     close () {
