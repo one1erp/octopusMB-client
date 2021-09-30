@@ -65,12 +65,15 @@ class Client extends EventEmitter {
 
         this._group = options.group.trim();
         this._name = (options.name)? options.name.trim() : null;
-        let fullUrl = (options.url.includes(":"))? options.url : options.url + ":" + "8899";
+        let host = (options.host)? options.host : "localhost";
+        let port = (options.port)? options.port : "8899";
+        let protocol = (options.ssl)? "wss" : "ws";
+        let fullUrl = protocol + "://"  + host + ":" + port;
 
         let rwsOptions = (options.rwsOptions)? options.rwsOptions : {};
         rwsOptions.WebSocket = ws;
         //this._ws = new ws("ws://" + fullUrl);
-        this._rws = new ReconnectingWebSocket("ws://" + fullUrl, [], rwsOptions);
+        this._rws = new ReconnectingWebSocket(fullUrl, [], rwsOptions);
         this._rws.addEventListener('open', () => {
             let identityJson = {
                 group: this._group,
