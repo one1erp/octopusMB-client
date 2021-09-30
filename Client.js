@@ -1,7 +1,17 @@
-var EventEmitter = require('eventemitter3');
-const ws = require('ws');
+import EventEmitter from 'eventemitter3';
+import ws from 'ws';
+import ReconnectingWebSocket from 'reconnecting-websocket';
+
+const Status = {
+    CONNECTED: "CONNECTED",
+    DISCONNECTED: "DISCONNECTED"
+}
 
 class Client extends EventEmitter {
+
+    static get Status() {
+        return Status;
+    }
 
     _identified = false;
     _messageId = 0;
@@ -9,15 +19,20 @@ class Client extends EventEmitter {
     _group = null;
     _name= null;
     _messages = {};
+    _status = null;
+    _rws = null;
 
-    constructor({
-            url,
-            group,
-            name
-        }) {
+    constructor(options) {
         super();
+        this._status = Status.DISCONNECTED;
 
-        if (typeof group != "string") {
+        if (options) this.connect(options);
+
+
+    }
+
+    connect(options) {
+        if (typeof options.group != "string") {
             setImmediate(() => {
                 this.emit("error", new Error("group must be a string"));
                 
@@ -25,14 +40,14 @@ class Client extends EventEmitter {
             return;
         }
 
-        if (group.trim().length == 0) {
+        if (options.group.trim().length == 0) {
             setImmediate(() => {
                 this.emit("error", new Error("group must not be empty"));
             });
             return;
         }
 
-        if (name && typeof name != "string") {
+        if (options.name && typeof options.name != "string") {
             setImmediate(() => {
                 this.emit("error", new Error("name must be a string"));
                 
@@ -40,7 +55,7 @@ class Client extends EventEmitter {
             return;
         }
 
-        if (name && name.trim().length == 0) {
+        if (options.name && options.name.trim().length == 0) {
             setImmediate(() => {
                 this.emit("error", new Error("name must be a string"));
                 
@@ -48,28 +63,36 @@ class Client extends EventEmitter {
             return;
         }
 
-        this._group = group.trim();
-        this._name = (name)? name.trim() : null;
-        let fullUrl = (url.includes(":"))? url : url + ":" + "8899";
+        this._group = options.group.trim();
+        this._name = (options.name)? options.name.trim() : null;
+        let fullUrl = (options.url.includes(":"))? options.url : options.url + ":" + "8899";
 
-        this._ws = new ws("ws://" + fullUrl);
-        this._ws.on('open', () => {
+        let rwsOptions = (options.rwsOptions)? options.rwsOptions : {};
+        rwsOptions.WebSocket = ws;
+        //this._ws = new ws("ws://" + fullUrl);
+        this._rws = new ReconnectingWebSocket("ws://" + fullUrl, [], rwsOptions);
+        this._rws.addEventListener('open', () => {
             let identityJson = {
                 group: this._group,
                 name: this._name
             }
 
-            this._ws.send(JSON.stringify(identityJson));
+            this._rws.send(JSON.stringify(identityJson));
         });
 
-        this._ws.on("message", (message) => {
-            console.log("base message:" + message);
+        this._rws.addEventListener("message", (event) => {
+            let message = event.data;
             let jsonMessage = null;
-            try {
-                jsonMessage = JSON.parse(message);
-            } catch (error) {
-                console.error(error);
-                return;
+            if (typeof message == "string") {
+            
+                try {
+                    jsonMessage = JSON.parse(message);
+                } catch (error) {
+                    console.error(error);
+                    return;
+                }
+            } else {
+                jsonMessage = message;
             }
 
             if (!this._identified) {
@@ -78,7 +101,8 @@ class Client extends EventEmitter {
                 } else {
                     this._identified = true;
                     if (!this._name) this._name = jsonMessage.identity;
-                    console.log(this._name);
+                    this._status = Status.CONNECTED;
+                    this.emit("status", this._status);
                     this.emit("open");
                 }
             } else {
@@ -92,23 +116,37 @@ class Client extends EventEmitter {
                             type: "response"
                         }
                         newMessage.clientMessageId = this._generateMessageId();
-                        this._ws.send(JSON.stringify(newMessage));
+                        this._rws.send(JSON.stringify(newMessage));
                     });
                 } else if (replyToClientMessageId) {
-                    console.log("replying to client message id: " + replyToClientMessageId);
                     let promise = this._messages[replyToClientMessageId];
                     if (promise) promise.resolve(jsonMessage.data);
                 } else {
-                    console.log("getting message:" + jsonMessage);
                     this.emit("message", jsonMessage.data);
                 }
 
             }
         });
+
+        this._rws.addEventListener("error", (err) => {
+            this.emit("error", err);
+        });
+
+        this._rws.addEventListener("close", ()=> {
+            this._identified = false;
+            //this._name = null;
+            this._status = Status.DISCONNECTED;
+            this.emit("status", this._status);
+            this.emit('close');
+        });
+    }
+
+    status() {
+        return this._status;
     }
 
     send(message) {
-        this._ws.send(message);
+        this._rws.send(message);
     }
 
     publish(name, message) {
@@ -118,7 +156,7 @@ class Client extends EventEmitter {
             type: "publish"
         }
         newMessage.clientMessageId = this._generateMessageId();
-        this._ws.send(JSON.stringify(newMessage));
+        this._rws.send(JSON.stringify(newMessage));
     }
 
     request(name, message) {
@@ -128,14 +166,16 @@ class Client extends EventEmitter {
             type: "request"
         }
         newMessage.clientMessageId = this._generateMessageId();
-        this._ws.send(JSON.stringify(newMessage));
+        this._rws.send(JSON.stringify(newMessage));
         return new Promise( (resolve, reject) => {
             this._messages[newMessage.clientMessageId] = {resolve, reject}
         });
     }
 
-    close () {
-        this._ws.close();
+    close() {
+        if (this._rws) {
+            this._rws.close();
+        }
     }
 
     _generateMessageId() {
@@ -146,4 +186,4 @@ class Client extends EventEmitter {
     
 }
 
-module.exports = Client
+export default Client
