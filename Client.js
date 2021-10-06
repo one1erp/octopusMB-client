@@ -181,6 +181,14 @@ class Client extends EventEmitter {
         }
     }
 
+    group() {
+        return this._group;
+    }
+
+    name() {
+        return this._name;
+    }
+
     _generateMessageId() {
         this._messageId++;
         return this._messageId;
