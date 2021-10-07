@@ -97,7 +97,6 @@ class Client extends EventEmitter {
             } else {
                 jsonMessage = message;
             }
-
             if (!this._identified) {
                 if (jsonMessage.status == "fail") {
                     this.emit("error", new Error(jsonMessage.errorMessage));
@@ -109,8 +108,10 @@ class Client extends EventEmitter {
                     this.emit("open");
                 }
             } else {
+                
                 let type = jsonMessage.type;
                 let replyToClientMessageId = jsonMessage.replyToClientMessageId;
+                let replyErrorToClientMessageId = jsonMessage.replyErrorToClientMessageId;
                 if (type == "request") {
                     this.emit("request", jsonMessage.data, (message) => {
                         let newMessage = {
@@ -120,10 +121,21 @@ class Client extends EventEmitter {
                         }
                         newMessage.clientMessageId = this._generateMessageId();
                         this._rws.send(JSON.stringify(newMessage));
+                    }, (error) => {
+                        let newMessage = {
+                            replyErrorTo: jsonMessage.messageId,
+                            data: error,
+                            type: "response"
+                        }
+                        newMessage.clientMessageId = this._generateMessageId();
+                        this._rws.send(JSON.stringify(newMessage));
                     });
                 } else if (replyToClientMessageId) {
                     let promise = this._messages[replyToClientMessageId];
                     if (promise) promise.resolve(jsonMessage.data);
+                } else if (replyErrorToClientMessageId) {
+                    let promise = this._messages[replyErrorToClientMessageId];
+                    if (promise) promise.reject(jsonMessage.data);
                 } else {
                     this.emit("message", jsonMessage.data);
                 }
