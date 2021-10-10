@@ -124,7 +124,8 @@ class Client extends EventEmitter {
                     }, (error) => {
                         let newMessage = {
                             replyErrorTo: jsonMessage.messageId,
-                            data: error,
+                            message: (error.message)? error.message : error,
+                            data: error.data,
                             type: "response"
                         }
                         newMessage.clientMessageId = this._generateMessageId();
@@ -135,7 +136,12 @@ class Client extends EventEmitter {
                     if (promise) promise.resolve(jsonMessage.data);
                 } else if (replyErrorToClientMessageId) {
                     let promise = this._messages[replyErrorToClientMessageId];
-                    if (promise) promise.reject(jsonMessage.data);
+                    if (promise) {
+                        let errorMessage = (jsonMessage.message)? jsonMessage.message : jsonMessage;
+                        let error = new Error(errorMessage);
+                        if (typeof jsonMessage.data !== "undefined") error.data = jsonMessage.data;
+                        promise.reject(error);
+                    }
                 } else {
                     this.emit("message", jsonMessage.data);
                 }
