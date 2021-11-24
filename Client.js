@@ -2,16 +2,18 @@ import EventEmitter from 'eventemitter3';
 import ws from 'ws';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
-const Status = {
-    CONNECTED: "CONNECTED",
-    DISCONNECTED: "DISCONNECTED"
+/**
+ * State object containing the current state of the connection
+ */
+const State = {
+    DISCONNECTED: "DISCONNECTED",
+    CONNECTING: "CONNECTING",
+    OPEN: "OPEN",
+    CLOSING: "CLOSING",
+    CLOSED: "CLOSED"
 }
 
 class Client extends EventEmitter {
-
-    static get Status() {
-        return Status;
-    }
 
     _identified = false;
     _messageId = 0;
@@ -19,12 +21,12 @@ class Client extends EventEmitter {
     _group = null;
     _name= null;
     _messages = {};
-    _status = null;
+    _state = null;
     _rws = null;
 
     constructor(options) {
         super();
-        this._status = Status.DISCONNECTED;
+        this._state = State.DISCONNECTED;
 
         if (options) this.connect(options);
 
@@ -74,6 +76,8 @@ class Client extends EventEmitter {
         rwsOptions.WebSocket = ws;
         //this._ws = new ws("ws://" + fullUrl);
         this._rws = new ReconnectingWebSocket(fullUrl, [], rwsOptions);
+        this._state = State.CONNECTING;
+        this.emit("state", this._state);
         this._rws.addEventListener('open', () => {
             let identityJson = {
                 group: this._group,
@@ -103,12 +107,11 @@ class Client extends EventEmitter {
                 } else {
                     this._identified = true;
                     if (!this._name) this._name = jsonMessage.identity;
-                    this._status = Status.CONNECTED;
-                    this.emit("status", this._status);
+                    this._state = State.OPEN;
+                    this.emit("state", this._state);
                     this.emit("open");
                 }
             } else {
-                
                 let type = jsonMessage.type;
                 let replyToClientMessageId = jsonMessage.replyToClientMessageId;
                 let replyErrorToClientMessageId = jsonMessage.replyErrorToClientMessageId;
@@ -156,14 +159,10 @@ class Client extends EventEmitter {
         this._rws.addEventListener("close", ()=> {
             this._identified = false;
             //this._name = null;
-            this._status = Status.DISCONNECTED;
-            this.emit("status", this._status);
+            this._state = State.CLOSED;
+            this.emit("state", this._state);
             this.emit('close');
         });
-    }
-
-    status() {
-        return this._status;
     }
 
     send(message) {
@@ -212,7 +211,32 @@ class Client extends EventEmitter {
         return this._messageId;
     }
 
-    
+    /**
+     * Get the current state of the connection
+     * @returns State
+     */
+    state() {
+       if (!this._rws) return State.DISCONNECTED;
+       else return this.stateFromReadyState(this._rws.readyState); 
+    }
+
+    /**
+     * Transform rws readyState to State object
+     * @param integer readyState 
+     * @returns State
+     */
+    stateFromReadyState(readyState) {
+        switch (readyState) {
+            case 0:
+                return State.CONNECTING;
+            case 1:
+                return State.OPEN;
+            case 2:
+                return State.CLOSING;
+            case 3:
+                return State.CLOSED;
+        }
+    }
 }
 
 export default Client
