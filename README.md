@@ -62,6 +62,20 @@ A client.connect() accepts the following parameters:
 | `name`        | `none`                      | the specific name of this client                           |
 | `rwsOptions`  | `false`                     | object options for reconnecting-websocket module           |
 
+A client.request() accepts the following parameters:
+
+| Name          | Mandatory                   |  Description    |
+| ------------- | --------------------------- | --------------- |
+| `recipient`   | `true`                      | recipient client, by group or name  |  
+| `message`     | `true`                      | message to be sent                  |
+| `options`     | `false`                     | options for the request             |
+
+request options:
+
+| Name          | Default                   |  Description    |
+| ------------- | ------------------------- | --------------- |
+| `timeout`     | `no timeout`              | timeout in ms for request to be rejected  |  
+
 ## Contributors
 
 - [@drorv-one1](https://github.com/drorv-one1)

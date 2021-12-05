@@ -1,6 +1,7 @@
 import EventEmitter from 'eventemitter3';
 import ws from 'ws';
 import ReconnectingWebSocket from 'reconnecting-websocket';
+import errors from './errors.js'
 
 /**
  * State object containing the current state of the connection
@@ -36,7 +37,9 @@ class Client extends EventEmitter {
     connect(options) {
         if (typeof options.group != "string") {
             setImmediate(() => {
-                this.emit("error", new Error("group must be a string"));
+                let error = new Error(errors.GROUP_NOT_STRING.error)
+                error.data = errors.GROUP_NOT_STRING;
+                this.emit("error", error);
                 
             });
             return;
@@ -44,22 +47,28 @@ class Client extends EventEmitter {
 
         if (options.group.trim().length == 0) {
             setImmediate(() => {
-                this.emit("error", new Error("group must not be empty"));
+                let error = new Error(errors.GROUP_EMPTY.error)
+                error.data = errors.GROUP_EMPTY;
+                this.emit("error", error);
             });
             return;
         }
 
         if (options.name && typeof options.name != "string") {
             setImmediate(() => {
-                this.emit("error", new Error("name must be a string"));
+                let error = new Error(errors.NAME_NOT_STRING.error)
+                error.data = errors.NAME_NOT_STRING;
+                this.emit("error", error);
                 
             });
             return;
         }
 
         if (options.name && options.name.trim().length == 0) {
+            let error = new Error(errors.NAME_EMPTY.error)
+            error.data = errors.NAME_EMPTY;
             setImmediate(() => {
-                this.emit("error", new Error("name must be a string"));
+                this.emit("error", error);
                 
             });
             return;
@@ -179,7 +188,10 @@ class Client extends EventEmitter {
         this._rws.send(JSON.stringify(newMessage));
     }
 
-    request(name, message) {
+    request(name, message, options) {
+        if (options && options.timeout && !Number.isInteger(options.timeout)) {
+            throw new Error(errors.TIMEOUT_NOT_NUMBER.error);
+        }
         let newMessage = {
             to: name,
             data: message,
@@ -188,6 +200,13 @@ class Client extends EventEmitter {
         newMessage.clientMessageId = this._generateMessageId();
         this._rws.send(JSON.stringify(newMessage));
         return new Promise( (resolve, reject) => {
+            if (options && options.timeout) {
+                setTimeout(() => {
+                    let error = new Error(errors.TIMEOUT.error);
+                    error.data = errors.TIMEOUT
+                    reject(error);
+                }, options.timeout);
+            }
             this._messages[newMessage.clientMessageId] = {resolve, reject}
         });
     }
