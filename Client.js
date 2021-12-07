@@ -190,7 +190,9 @@ class Client extends EventEmitter {
 
     request(name, message, options) {
         if (options && options.timeout && !Number.isInteger(options.timeout)) {
-            throw new Error(errors.TIMEOUT_NOT_NUMBER.error);
+            let error = new Error(errors.TIMEOUT_NOT_NUMBER.error);
+            error.data = errors.TIMEOUT_NOT_NUMBER;
+            throw error;
         }
         let newMessage = {
             to: name,
