@@ -22,5 +22,9 @@ export default {
     TIMEOUT_NOT_NUMBER: {
         errorCode: "E006",
         error: "timeout is not an integer number"
+    },
+    NAME_EQUAL_GROUP: {
+        errorCode: "E007",
+        error: "name can't be equal to group"
     }
 }

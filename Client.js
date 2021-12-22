@@ -35,6 +35,7 @@ class Client extends EventEmitter {
     }
 
     connect(options) {
+        //check if group exists and is string
         if (typeof options.group != "string") {
             setImmediate(() => {
                 let error = new Error(errors.GROUP_NOT_STRING.error)
@@ -45,6 +46,7 @@ class Client extends EventEmitter {
             return;
         }
 
+        //check if group is not empty string
         if (options.group.trim().length == 0) {
             setImmediate(() => {
                 let error = new Error(errors.GROUP_EMPTY.error)
@@ -54,6 +56,7 @@ class Client extends EventEmitter {
             return;
         }
 
+        //check if name is string
         if (options.name && typeof options.name != "string") {
             setImmediate(() => {
                 let error = new Error(errors.NAME_NOT_STRING.error)
@@ -64,12 +67,23 @@ class Client extends EventEmitter {
             return;
         }
 
+        //check if name is not empty string
         if (options.name && options.name.trim().length == 0) {
             let error = new Error(errors.NAME_EMPTY.error)
             error.data = errors.NAME_EMPTY;
             setImmediate(() => {
                 this.emit("error", error);
                 
+            });
+            return;
+        }
+
+        //check if name equals group
+        if (options.name === options.group) {
+            let error = new Error(errors.NAME_EQUAL_GROUP.error)
+            error.data = errors.NAME_EQUAL_GROUP;
+            setImmediate(() => {
+                this.emit("error", error);
             });
             return;
         }
