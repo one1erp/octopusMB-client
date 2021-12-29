@@ -379,10 +379,6 @@ class Client extends EventEmitter {
      * @returns string
      */
     sendStream(name, type, octopusStream, reply) {
-        if (!octopusStream || !this.isReadableStream(octopusStream.stream())) {
-            throw new Error("Not a readable stream");
-        }
-        //prepare header message
         let headerMessageId = this._generateMessageId();
         let headerMessage = {
             data: {
@@ -479,17 +475,6 @@ class Client extends EventEmitter {
         if (data.streamStatus == "HEADER") return currentStream;
         else return false;
     }
-
-    /**
-     * Check if object is a readable stream
-     * @param object obj 
-     * @returns boolean
-     */
-    isReadableStream(obj) {
-        return obj instanceof Stream &&
-          typeof (obj._read === 'function') &&
-          typeof (obj._readableState === 'object');
-      }
 }
 
 export default Client

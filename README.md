@@ -51,6 +51,60 @@ client.on("error", (error) => {
     catch errors
 });
 ```
+### Sending Stream
+You can also send a stream of data to another client, via publish, in a request, or in a response
+The use of streams is available with the OctopusStream object
+This object can contain the stream and an 'extrea' property that can be whatever you like
+
+example for publishing a file:
+```
+import Client, {OctopusStream} from 'octopusmb-client'
+import fs from 'fs'
+...
+const file = "/location/to/file";
+const readableStream = fs.createReadStream(file);
+const octopusStream = new OctopusStream({
+    stream: readableStream,
+    extra: {
+        fileName: "filename",
+    }
+})
+
+client.publish("foo", octopusStream);
+```
+If a stream is published, it will be received by the client in a 'stream' event
+```
+client.on("stream", octopusStream => {
+    //saving stream to file
+    let writeStream = fs.createWriteStream(octopusStream.extra().fileName); //get fileName from octopusStream's extra property
+    octopusStream.stream().on("data", chunk => {
+        writeStream.write(chunk);
+    })
+    octopusStream.stream().on("end", () => {
+        writeStream.end();
+    });
+})
+```
+
+If a stream is sent by request or response, there needs to be a check for the OctopusStream object
+```
+//for receiving request
+client.on("request", message => {
+    if (message instanceof OctopusStream) {
+        //do something with stream
+    } else {
+        //do something with regular message
+    }
+});
+
+//for receiving response
+let response = await client.request("foo", "bar");
+if (response instanceof OctopusStream) {
+    //do something with response stream
+} else {
+        //do something with regular response message
+    }
+```
 A client.connect() accepts the following parameters:
 
 | Name          | Default                     |  Description    |
@@ -75,6 +129,12 @@ request options:
 | Name          | Default                   |  Description    |
 | ------------- | ------------------------- | --------------- |
 | `timeout`     | `no timeout`              | timeout in ms for request to be rejected  |  
+
+OctopusStream accepts the following object in constructor:
+| Name          | Mandatory                 |  Description    |
+| ------------- | ------------------------- | --------------- |
+| `stream`      | `true`                    | a readable stream                                                       |  
+| `extra`       | `false`                   | string/object of any information you want to pass along with the stream |
 
 ## Contributors
 
