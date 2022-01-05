@@ -89,11 +89,13 @@ client.on("stream", octopusStream => {
 If a stream is sent by request or response, there needs to be a check for the OctopusStream object
 ```
 //for receiving request
-client.on("request", message => {
+client.on("request", (message, response, error) => {
     if (message instanceof OctopusStream) {
         //do something with stream
+        response(/*data to send back*/)
     } else {
         //do something with regular message
+        response(/*data to send back*/)
     }
 });
 
