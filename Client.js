@@ -475,6 +475,21 @@ class Client extends EventEmitter {
         if (data.streamStatus == "HEADER") return currentStream;
         else return false;
     }
+
+    clientExists(name) {
+        let baseMessageId = this._generateMessageId();
+        let newMessage = {
+            clientMessageId: baseMessageId,
+            type: "system-query",
+            query: "client.exists",
+            queryData: name
+        }
+        this._rws.send(JSON.stringify(newMessage));
+        //return Promise
+        return new Promise( (resolve, reject) => {
+            this._messages[baseMessageId] = {resolve, reject}
+        });
+    }
 }
 
 export default Client
