@@ -157,7 +157,7 @@ class Client extends EventEmitter {
                 //read incoming message
                 let messageData = jsonMessage.data;
                 //create OctopusStream if message is stream header
-                if (jsonMessage.data.streamType == "OctopusStream") {
+                if (jsonMessage.data && jsonMessage.data.streamType == "OctopusStream") {
                     let streamResult = this.parseIncomingStream(jsonMessage.data);
                     if (streamResult instanceof OctopusStream) {
                         messageData = streamResult;
