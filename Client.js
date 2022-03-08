@@ -476,6 +476,11 @@ class Client extends EventEmitter {
         else return false;
     }
 
+    /**
+     * Send system query to check if client exists, by group name or client name
+     * @param string name 
+     * @returns Promise
+     */
     clientExists(name) {
         let baseMessageId = this._generateMessageId();
         let newMessage = {

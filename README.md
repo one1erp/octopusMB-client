@@ -107,6 +107,8 @@ if (response instanceof OctopusStream) {
         //do something with regular response message
     }
 ```
+
+### Methods
 A client.connect() accepts the following parameters:
 
 | Name          | Default                     |  Description    |
@@ -138,6 +140,8 @@ OctopusStream accepts the following object in constructor:
 | `stream`      | `true`                    | a readable stream                                                       |  
 | `extra`       | `false`                   | string/object of any information you want to pass along with the stream |
 
+Client.clientExists(name) checkes whether a group or client name is connected to the octopusMB server
+It returnes a Promise with true or false response
 ## Contributors
 
 - [@drorv-one1](https://github.com/drorv-one1)
