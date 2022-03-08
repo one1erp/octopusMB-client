@@ -1,6 +1,6 @@
 {
   "name": "octopusmb-client",
-  "version": "1.2.0-rc",
+  "version": "1.2.1-rc",
   "description": "octopusMB client",
   "main": "index.js",
   "type": "module",
