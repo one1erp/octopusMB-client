@@ -495,6 +495,27 @@ class Client extends EventEmitter {
             this._messages[baseMessageId] = {resolve, reject}
         });
     }
+
+    /**
+     * Send system query to server
+     * @param string query 
+     * @param any data 
+     * @returns Promise
+     */
+    systemQuery(query, data) {
+        let baseMessageId = this._generateMessageId();
+        let newMessage = {
+            clientMessageId: baseMessageId,
+            type: "system-query",
+            query:query,
+            queryData: data
+        }
+        this._rws.send(JSON.stringify(newMessage));
+        //return Promise
+        return new Promise( (resolve, reject) => {
+            this._messages[baseMessageId] = {resolve, reject}
+        });
+    }
 }
 
 export default Client
