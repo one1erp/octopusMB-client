@@ -487,7 +487,9 @@ class Client extends EventEmitter {
             clientMessageId: baseMessageId,
             type: "system-query",
             query: "client.exists",
-            queryData: name
+            queryData: {
+                name
+            }
         }
         this._rws.send(JSON.stringify(newMessage));
         //return Promise
