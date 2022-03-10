@@ -27,6 +27,7 @@ class Client extends EventEmitter {
     _messages = {};
     _state = null;
     _rws = null;
+    _system = false;
 
     constructor(options) {
         super();
@@ -43,62 +44,12 @@ class Client extends EventEmitter {
      * @returns null
      */
     connect(options) {
-        //check if group exists and is string
-        if (typeof options.group != "string") {
-            setImmediate(() => {
-                let error = new Error(errors.GROUP_NOT_STRING.error)
-                error.data = errors.GROUP_NOT_STRING;
-                this.emit("error", error);
-                
-            });
-            return;
-        }
-
-        //check if group is not empty string
-        if (options.group.trim().length == 0) {
-            setImmediate(() => {
-                let error = new Error(errors.GROUP_EMPTY.error)
-                error.data = errors.GROUP_EMPTY;
-                this.emit("error", error);
-            });
-            return;
-        }
-
-        //check if name is string
-        if (options.name && typeof options.name != "string") {
-            setImmediate(() => {
-                let error = new Error(errors.NAME_NOT_STRING.error)
-                error.data = errors.NAME_NOT_STRING;
-                this.emit("error", error);
-                
-            });
-            return;
-        }
-
-        //check if name is not empty string
-        if (options.name && options.name.trim().length == 0) {
-            let error = new Error(errors.NAME_EMPTY.error)
-            error.data = errors.NAME_EMPTY;
-            setImmediate(() => {
-                this.emit("error", error);
-                
-            });
-            return;
-        }
-
-        //check if name equals group
-        if (options.name === options.group) {
-            let error = new Error(errors.NAME_EQUAL_GROUP.error)
-            error.data = errors.NAME_EQUAL_GROUP;
-            setImmediate(() => {
-                this.emit("error", error);
-            });
-            return;
-        }
-
-        //set connection parameters
-        this._group = options.group.trim();
-        this._name = (options.name)? options.name.trim() : null;
+        //validate options, return immidate error if not valid
+        let validate = this.validateClient(options);
+        if (!validate) return;
+        //set system property
+        if (options.system === true) this._system = true;
+        //set connection string
         let host = (options.host)? options.host : "localhost";
         let port = (options.port)? options.port : "8899";
         let protocol = (options.ssl)? "wss" : "ws";
@@ -115,9 +66,16 @@ class Client extends EventEmitter {
 
         //send identity when connection open
         this._rws.addEventListener('open', () => {
-            let identityJson = {
-                group: this._group,
-                name: this._name
+            let identityJson = {};
+            if (options.system === true) {
+                identityJson = {
+                    password: options.password
+                }
+            } else {
+                identityJson = {
+                    group: this._group,
+                    name: this._name
+                }
             }
 
             this._rws.send(JSON.stringify(identityJson));
@@ -236,6 +194,96 @@ class Client extends EventEmitter {
             this.emit("state", this._state);
             this.emit('close');
         });
+    }
+
+    /**
+     * Validate client options
+     * @param object options 
+     * @returns boolean
+     */
+    validateClient(options) {
+        //check options as object
+        if (typeof options != "object") {
+            setImmediate(() => {
+                let error = new Error(errors.OPTIONS_NOT_OBJECT.error)
+                error.data = errors.OPTIONS_NOT_OBJECT;
+                this.emit("error", error);
+                
+            });
+            return false;
+        }
+
+        //check system property
+        if (options.hasOwnProperty("system") && typeof options.system != "boolean") {
+            setImmediate(() => {
+                let error = new Error(errors.SYSTEM_BOOLEAN.error)
+                error.data = errors.SYSTEM_BOOLEAN;
+                this.emit("error", error);
+                
+            });
+            return false;
+        }
+
+        //check regular client options
+        if (!options.system) {
+            //check if group exists and is string
+            if (typeof options.group != "string") {
+                setImmediate(() => {
+                    let error = new Error(errors.GROUP_NOT_STRING.error)
+                    error.data = errors.GROUP_NOT_STRING;
+                    this.emit("error", error);
+                    
+                });
+                return false;
+            }
+
+            //check if group is not empty string
+            if (options.group.trim().length == 0) {
+                setImmediate(() => {
+                    let error = new Error(errors.GROUP_EMPTY.error)
+                    error.data = errors.GROUP_EMPTY;
+                    this.emit("error", error);
+                });
+                return false;
+            }
+
+            //check if name is string
+            if (options.name && typeof options.name != "string") {
+                setImmediate(() => {
+                    let error = new Error(errors.NAME_NOT_STRING.error)
+                    error.data = errors.NAME_NOT_STRING;
+                    this.emit("error", error);
+                    
+                });
+                return false;
+            }
+
+            //check if name is not empty string
+            if (options.name && options.name.trim().length == 0) {
+                let error = new Error(errors.NAME_EMPTY.error)
+                error.data = errors.NAME_EMPTY;
+                setImmediate(() => {
+                    this.emit("error", error);
+                    
+                });
+                return false;
+            }
+
+            //check if name equals group
+            if (options.name === options.group) {
+                let error = new Error(errors.NAME_EQUAL_GROUP.error)
+                error.data = errors.NAME_EQUAL_GROUP;
+                setImmediate(() => {
+                    this.emit("error", error);
+                });
+                return false;
+            }
+
+            //set connection parameters if not system
+            this._group = options.group.trim();
+            this._name = (options.name)? options.name.trim() : null;
+        }
+        return true;
     }
 
     send(message) {

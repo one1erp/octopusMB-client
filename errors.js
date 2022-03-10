@@ -26,5 +26,13 @@ export default {
     NAME_EQUAL_GROUP: {
         errorCode: "E007",
         error: "name can't be equal to group"
+    },
+    SYSTEM_BOOLEAN: {
+        errorCode: "E008",
+        error: "system property must be boolean"
+    },
+    OPTIONS_NOT_OBJECT: {
+        errorCode: "E009",
+        error: "options not an object"
     }
 }
