@@ -318,6 +318,11 @@ class Client extends EventEmitter {
         }
     }
 
+    reconnect() {
+        if (this._rws)
+            this._rws.reconnect();
+    }
+
     /**
      * Return group name
      * @returns string
