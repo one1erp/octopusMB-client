@@ -202,6 +202,7 @@ class Client extends EventEmitter {
                 } else if (replyToClientMessageId) {
                     let promise = this._messages[replyToClientMessageId];
                     if (promise) promise.resolve(messageData);
+                    delete this._messages[replyToClientMessageId];
                 //resolve error when getting error message
                 } else if (replyErrorToClientMessageId) {
                     let promise = this._messages[replyErrorToClientMessageId];
@@ -210,6 +211,7 @@ class Client extends EventEmitter {
                         let error = new Error(errorMessage);
                         if (typeof messageData !== "undefined") error.data = jsonMessage.data;
                         promise.reject(error);
+                        delete this._messages[replyErrorToClientMessageId];
                     }
                 //message type is publish
                 } else {
