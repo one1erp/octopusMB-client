@@ -18,9 +18,9 @@
   },
   "homepage": "https://github.com/one1erp/octopusMB-client#readme",
   "dependencies": {
-    "eventemitter3": "^4.0.7",
+    "eventemitter3": "^5.0.1",
     "reconnecting-websocket": "^4.4.0",
-    "uuid": "^8.3.2",
-    "ws": "^7.4.6"
+    "uuid": "^10.0.0",
+    "ws": "8.18.0"
   }
 }
